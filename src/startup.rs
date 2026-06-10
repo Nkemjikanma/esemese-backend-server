@@ -2,12 +2,14 @@ use crate::{common::errors::AppError, config, routes::auth::configure_auth, type
 use actix_cors::Cors;
 use actix_governor::{Governor, GovernorConfigBuilder};
 use actix_web::middleware::NormalizePath;
-use actix_web::{App, HttpResponse, HttpServer, dev::Server, http, web};
+use actix_web::{App, HttpResponse, HttpServer, dev::Server, http, web, error, ResponseError};
 use sqlx::{PgPool, postgres::PgPoolOptions};
 use std::net::TcpListener;
 use std::sync::Arc;
 use std::time::Duration;
 use tracing_actix_web::TracingLogger;
+use crate::types::uploads::ContentType;
+
 pub fn run(listener: TcpListener, app_state: Arc<AppState>) -> Result<Server, AppError> {
     let connection = web::Data::new(app_state);
 
@@ -17,11 +19,22 @@ pub fn run(listener: TcpListener, app_state: Arc<AppState>) -> Result<Server, Ap
         .finish()
         .unwrap();
     let server = HttpServer::new(move || {
+
+
+        // ensure correct mime type
+        let json_config = web::JsonConfig::default().content_type(move |mime| {
+            mime.to_string() == "image/jpg" || mime.to_string() == "image/png" || mime.to_string() == "image/webp"
+        }).error_handler(|err, _req| {
+            tracing::error!(%err, "An invalid Mime type is being sent");
+
+            let api_error = AppError::InvalidContentType(err.to_string());
+            error::InternalError::from_response(err, api_error.error_response()).into()
+        });
         App::new()
             .wrap(
                 Cors::default()
                     .allowed_origin("http://localhost:3000")
-                    .allowed_origin("https://nkem.dev")
+                    .allowed_origin("https://esemese.xyz")
                     .allowed_methods(vec!["GET", "POST", "PUT", "PATCH", "DELETE"])
                     .allowed_headers(vec![
                         http::header::AUTHORIZATION,
@@ -40,6 +53,7 @@ pub fn run(listener: TcpListener, app_state: Arc<AppState>) -> Result<Server, Ap
             .configure(configure_auth)
             .service(web::scope("/api"))
             .app_data(connection.clone())
+            .app_data(json_config)
     })
     .listen(listener)?
     .run();

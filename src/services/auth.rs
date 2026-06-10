@@ -7,7 +7,6 @@ use crate::{
     types::auth::LoginForm,
 };
 use secrecy::ExposeSecret;
-use sqlx::PgPool;
 
 pub struct AuthServices;
 

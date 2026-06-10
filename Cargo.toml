@@ -17,6 +17,8 @@ actix-governor = "0.10.0"
 actix-web = "4.13.0"
 actix-web-httpauth = "0.8.2"
 argon2 = "0.5.3"
+aws-config = { version = "1.8.16", features = ["behavior-version-latest"] }
+aws-sdk-s3 = "1.132.0"
 chrono = { version = "0.4.44", features = ["serde"] }
 dotenvy = "0.15.7"
 jsonwebtoken = {version = "10.3.0", features = ["rust_crypto"] }

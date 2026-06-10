@@ -8,6 +8,7 @@ use sqlx::postgres::{PgConnectOptions, PgSslMode};
 pub struct Config {
     pub application: ApplicationConfig,
     pub database: DBConfig,
+    pub rustfs_config: RustFSConfig
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -49,8 +50,16 @@ impl DBConfig {
     }
 }
 
+
 #[derive(Deserialize, Debug, Clone)]
-pub struct InfraConfig {}
+pub struct RustFSConfig {
+    pub region: String,
+    pub access_key_id: String,
+    pub secret_access_key: String,
+    pub endpoint_internal: String, // server → RustFS, http://rustfs:9000 in prod
+    pub endpoint_public: String, // browser → RustFS, https://s3.esemese.xyz in prod
+    pub bucket_photos: String,
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Environment {
@@ -132,9 +141,19 @@ impl Config {
             require_ssl: true,
         };
 
+        let rustfs_config = RustFSConfig {
+            region: std::env::var("RUSTFS_REGION").map_err(|_| ConfigError::MissingEnv("RUSTFS_REGION".to_string()))?,
+            access_key_id: std::env::var("RUSTFS_ACCESS_KEY_ID").map_err(|_| ConfigError::MissingEnv("RUSTFS_ACCESS_KEY_ID".to_string()))?,
+            secret_access_key: std::env::var("RUSTFS_SECRET_ACCESS_KEY").map_err(|_| ConfigError::MissingEnv("RUSTFS_SECRET_ACCESS_KEY".to_string()))?,
+            endpoint_public: std::env::var("RUSTFS_ENDPOINT_PUBLIC").map_err(|_| ConfigError::MissingEnv("RUSTFS_ENDPOINT_PUBLIC".to_string()))?,
+            endpoint_internal: std::env::var("RUSTFS_ENDPOINT_INTERNAL").map_err(|_| ConfigError::MissingEnv("RUSTFS_ENDPOINT_INTERNAL".to_string()))?,
+            bucket_photos: std::env::var("RUSTFS_BUCKET_PHOTOS").map_err(|_| ConfigError::MissingEnv("RUSTFS_BUCKET_PHOTOS".to_string()))?,
+        };
+
         Ok(Self {
             application,
             database,
+           rustfs_config
         })
     }
     fn development_config() -> Result<Self, ConfigError> {
@@ -142,7 +161,10 @@ impl Config {
             port: 8000,
             host: "127.0.0.1".to_string(),
             admin_username: SecretString::from("nkemjika".to_string()),
-            admin_password_hash: SecretString::from("password".to_string()),
+            admin_password_hash: SecretString::from(
+                "$argon2d$v=19$m=12,t=3,p=1$eG9xb3kwMW13MDgwMDAwMA$C9GxzXC91CKUL79kOtEKrA"
+                    .to_string(),
+            ),
             jwt_secret: SecretString::from("jwt_secret".to_string()),
         };
 
@@ -155,9 +177,19 @@ impl Config {
             require_ssl: false,
         };
 
+        let rustfs_config = RustFSConfig{
+            region: "test_region".to_string(),
+            access_key_id: "acess_key_id".to_string(),
+            secret_access_key: "secret_access_key".to_string(),
+            endpoint_public: "https://s3.esemese.xyz".to_string(),
+            endpoint_internal: "http://rustfs:9000".to_string(),
+            bucket_photos: "esemese-photos".to_string(),
+        };
+
         Ok(Self {
             application,
             database,
+            rustfs_config,
         })
     }
 }

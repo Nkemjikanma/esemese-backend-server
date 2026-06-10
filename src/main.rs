@@ -6,8 +6,12 @@ use esemese_backend_server::{
     types::app::AppState,
 };
 
+use aws_config::{BehaviorVersion, Region};
+use aws_sdk_s3::config::Credentials;
 use std::net::TcpListener;
 use std::sync::Arc;
+use aws_sdk_s3::Client;
+
 #[tokio::main]
 async fn main() -> Result<(), AppError> {
     let environment: Environment = std::env::var("APP_ENV")
@@ -30,11 +34,31 @@ async fn main() -> Result<(), AppError> {
 
     tracing::info!("Listening here: {:?}", listener);
 
+    let credentials = Credentials::new(
+        &config.rustfs_config.access_key_id,
+        &config.rustfs_config.secret_access_key,
+        None,
+        None,
+        "rustfs",
+    );
+
+    let extracted_region = config.rustfs_config.region.clone();
+
+    let region = Region::new(extracted_region);
+
+    let endpoint_url = &config.rustfs_config.endpoint_public;
+
+    let shared_config = aws_config::defaults(BehaviorVersion::latest()).region(region).credentials_provider(credentials).endpoint_url(endpoint_url).load().await;
+
+    let rustfs_client = Client::new(&shared_config);
+
     let connection = create_pool(&config.database).expect("Failed to connect to postgres");
     let app_state = Arc::new(AppState {
         app_config: config,
         connection,
+        rustfs_client,
     });
+
 
     run(listener, app_state)
         .map_err(|e| -> AppError { e })?

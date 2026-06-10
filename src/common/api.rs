@@ -1,3 +1,4 @@
+use actix_web::http::StatusCode;
 use crate::common::errors::AppError;
 use actix_web::web::Json;
 use serde::Serialize;
@@ -17,4 +18,4 @@ impl<T: Serialize> APIResponse<T> {
     }
 }
 
-pub type AppResponse<T> = Result<Json<APIResponse<T>>, AppError>;
+pub type AppResponse<T> = Result<(Json<APIResponse<T>>, StatusCode), AppError>;
