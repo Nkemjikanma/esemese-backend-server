@@ -99,25 +99,34 @@ impl UploadsService {
             }
         }
 
-        let update_photo = sqlx::query!(r#"UPDATE photos SET status='processing', title=$2, description=$3, category=$4 WHERE id=$1 AND status='initiated'"#, photo_id, title.as_deref(), description.as_deref(), category.as_deref()).fetch_optional(connection).await.map_err(|err|{
+        let update_photo = sqlx::query!(r#"UPDATE photos SET status='processing', title=$2, description=$3, category=$4 WHERE id=$1 AND status='initiated'"#, photo_id, title.as_deref(), description.as_deref(), category.as_deref()).execute(connection).await.map_err(|err|{
             tracing::error!("Error updating record for the upload");
             UploadsError::ErrorUpdatingPhoto(photo_id.to_string())
         })?;
 
-        match update_photo {
-            Some(row) => {
-                // start processing
-                let confirm_response = ConfirmUploadsResponse {
+        if update_photo.rows_affected() == 0 {
+            let re_read_photo_record = sqlx::query!(r#"SELECT id, s3_key, status AS "status: PhotoStatus" FROM photos WHERE id = $1"#, photo_id).fetch_one(connection).await.map_err(|err: sqlx::Error| {
+                tracing::error!("Can't find photo in our DB");
+
+                match err {
+                    sqlx::Error::RowNotFound => UploadsError::PhotoNotFound(photo_id.to_string()),
+                    _ => UploadsError::PhotoQueryError("Error fetching photo".to_string())
+                }
+            })?;
+
+            if re_read_photo_record.status != PhotoStatus::Initiated {
+                return Ok(ConfirmUploadsResponse {
                     photo_id: *photo_id,
-                    status: PhotoStatus::Processing
-                };
-                return Ok(confirm_response)
-            }
-            None => {
-                return Err(AppError::Uploads(UploadsError::PhotoQueryError("Error fetching photo".to_string())));
+                    status: photo_record.status,
+                });
             }
         }
 
+        let confirm_response = ConfirmUploadsResponse {
+            photo_id: *photo_id,
+            status: PhotoStatus::Processing
+        };
 
+        Ok(confirm_response)
     }
 }

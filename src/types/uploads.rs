@@ -45,6 +45,7 @@ pub struct InitiateUploadResponse {
 
 #[derive(Serialize, Debug, sqlx::Type, PartialEq, Copy, Clone)]
 #[sqlx(type_name = "photo_status", rename_all = "lowercase")]
+#[serde(rename_all = "lowercase")]
 pub enum PhotoStatus {
     Initiated,
     Uploaded,

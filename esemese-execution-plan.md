@@ -105,7 +105,7 @@ pending → initiating → uploading → confirming → done
 
 **Backend tasks:**
 - [x] Implement `POST /uploads/initiate` — validate file type/size, generate S3 key, create presigned PUT URL, store pending upload in DB
-- [ ] Implement `POST /uploads/confirm` — verify object exists in S3, save photo record + metadata to DB
+- [x] Implement `POST /uploads/confirm` — verify object exists in S3, save photo record + metadata to DB
 - [x] Add upload state tracking in DB (initiated, uploaded, confirmed, failed)
 - [ ] Add cleanup job for stale initiated uploads (e.g., cron or background task that deletes uploads stuck in "initiated" for more than 1 hour — also delete the orphaned S3 object if it exists)
 

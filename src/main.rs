@@ -50,8 +50,9 @@ async fn main() -> Result<(), AppError> {
 
     let shared_config = aws_config::defaults(BehaviorVersion::latest()).region(region).credentials_provider(credentials).endpoint_url(endpoint_url).load().await;
 
-    let rustfs_client = Client::new(&shared_config);
+    let rustfs_client = Client::from_conf(aws_sdk_s3::config::Builder::from(&shared_config).force_path_style(true).build());
 
+    // Force building an S3-specific config with path-style enabled
     let connection = create_pool(&config.database).expect("Failed to connect to postgres");
     let app_state = Arc::new(AppState {
         app_config: config,

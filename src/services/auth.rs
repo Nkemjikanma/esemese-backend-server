@@ -11,7 +11,7 @@ use secrecy::ExposeSecret;
 pub struct AuthServices;
 
 impl AuthServices {
-    #[tracing::instrument(name = "login", skip(app_state))]
+    #[tracing::instrument(name = "login", skip(app_state, login_form))]
     pub async fn login(
         login_form: LoginForm,
         app_state: &ApplicationConfig,

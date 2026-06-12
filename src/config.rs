@@ -177,19 +177,19 @@ impl Config {
             require_ssl: false,
         };
 
-        let rustfs_config = RustFSConfig{
-            region: "test_region".to_string(),
-            access_key_id: "acess_key_id".to_string(),
-            secret_access_key: "secret_access_key".to_string(),
-            endpoint_public: "https://s3.esemese.xyz".to_string(),
-            endpoint_internal: "http://rustfs:9000".to_string(),
-            bucket_photos: "esemese-photos".to_string(),
+        let dev_rustfs_config = RustFSConfig {
+            region: std::env::var("RUSTFS_REGION").map_err(|_| ConfigError::MissingEnv("RUSTFS_REGION".to_string()))?,
+            access_key_id: std::env::var("RUSTFS_ACCESS_KEY_ID").map_err(|_| ConfigError::MissingEnv("RUSTFS_ACCESS_KEY_ID".to_string()))?,
+            secret_access_key: std::env::var("RUSTFS_SECRET_ACCESS_KEY").map_err(|_| ConfigError::MissingEnv("RUSTFS_SECRET_ACCESS_KEY".to_string()))?,
+            endpoint_public: std::env::var("RUSTFS_ENDPOINT_PUBLIC").map_err(|_| ConfigError::MissingEnv("RUSTFS_ENDPOINT_PUBLIC".to_string()))?,
+            endpoint_internal: std::env::var("RUSTFS_ENDPOINT_INTERNAL").map_err(|_| ConfigError::MissingEnv("RUSTFS_ENDPOINT_INTERNAL".to_string()))?,
+            bucket_photos: std::env::var("RUSTFS_BUCKET_PHOTOS").map_err(|_| ConfigError::MissingEnv("RUSTFS_BUCKET_PHOTOS".to_string()))?,
         };
 
         Ok(Self {
             application,
             database,
-            rustfs_config,
+            rustfs_config: dev_rustfs_config,
         })
     }
 }
