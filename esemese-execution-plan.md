@@ -148,8 +148,8 @@ A portfolio is the inverse of Dropbox: the gallery is *meant* to be seen by ever
 - [ ] `GET /photos/:id/original-url` — presigned URL for the **private original** only (from 1.5). Public variant URLs come back inline on the list/detail responses — no per-image presign.
 
 **Admin (authed):**
-- [ ] `POST /uploads/initiate` — start upload (from 1.4)
-- [ ] `POST /uploads/confirm` — confirm upload + save metadata (from 1.4)
+- [x] `POST /uploads/initiate` — start upload (from 1.4)
+- [x] `POST /uploads/confirm` — confirm upload + save metadata (from 1.4)
 - [ ] `PUT /photos/:id` — update photo metadata
 - [ ] `DELETE /photos/:id` — delete photo (also delete from S3)
 - [ ] `POST /collections` — create collection
@@ -162,12 +162,12 @@ A portfolio is the inverse of Dropbox: the gallery is *meant* to be seen by ever
 
 Dropbox's hard problem is sync/chunking; *this* system's hard problem is serving the right pixels fast. Invest here.
 
-- [ ] Generate a **responsive ladder**, not 2 sizes — e.g. widths 400 / 800 / 1200 / 1600 / 2400. Serving a 24MP original into a 300px grid cell is the #1 portfolio perf sin.
-- [ ] Generate **modern formats** — AVIF (best compression) with WebP fallback; can cut bytes 50-70% vs JPEG.
-- [ ] Compute a **blurhash/LQIP** once and store on `photos.blurhash` — makes the gallery feel instant.
+- [x] Generate a **responsive ladder**, not 2 sizes — e.g. widths 400 / 800 / 1200 / 1600 / 2400. Serving a 24MP original into a 300px grid cell is the #1 portfolio perf sin.
+- [x] Generate **modern formats** — AVIF (best compression) with WebP fallback; can cut bytes 50-70% vs JPEG.
+- [x] Compute a **blurhash/LQIP** once and store on `photos.blurhash` — makes the gallery feel instant.
 - [ ] **Bake in orientation** and **strip GPS/EXIF** from public derivatives (don't publish your home coordinates).
-- [ ] Write one `photo_variants` row per `(photo_id, width, format)`; upload each to the public derivative prefix (content-addressed key).
-- [ ] Flip `photos.status` → `ready` only once the variant set is complete.
+- [x] Write one `photo_variants` row per `(photo_id, width, format)`; upload each to the public derivative prefix (content-addressed key).
+- [x] Flip `photos.status` → `ready` only once the variant set is complete.
 
 **Do it async (decided 2026-06-08):** Encoding a 5-width × 2-format ladder from a 40MB RAW is seconds of CPU — don't block the `confirm` response on it. Pattern: `confirm` creates the `photos` row in `processing`, enqueues a job, returns immediately; a background worker encodes, writes variants, sets `ready`. For a single-user portfolio an in-process `tokio` worker + a `jobs` table is a perfectly legitimate "queue" — you do **not** need Kafka (that's the Dropbox-scale event bus on your whiteboard, not this).
 
@@ -245,9 +245,9 @@ Dropbox's hard problem is sync/chunking; *this* system's hard problem is serving
 ## Phase 3: Deployment & Operations
 
 ### 3.1 — Containerization
-- [ ] Dockerfile for Rust backend (multi-stage build: builder stage with cargo, slim runtime stage)
-- [ ] Dockerfile for TanStack Start frontend (Node runtime)
-- [ ] Docker Compose for all environments: backend + postgres + rustfs + frontend
+- [x] Dockerfile for Rust backend (multi-stage build: builder stage with cargo, slim runtime stage)
+- [x] Dockerfile for TanStack Start frontend (Node runtime)
+- [x] Docker Compose for all environments: backend + postgres + rustfs + frontend
   - Same compose structure in dev and prod — difference is just env vars (ports, domains, credentials)
 
 ### 3.2 — Deployment on Hetzner
@@ -375,3 +375,64 @@ A Rust CLI that syncs a local photo directory to your portfolio. Folder = collec
 - [ ] **Multipart upload for large files or just single PUT?** — Single PUT is sufficient for photos. Multipart is an optional Dropbox-like learning exercise.
 - [x] ~~**EXIF extraction: client-side or server-side?**~~ — **Server-side** (`kamadak-exif`), during async processing. Never trust client metadata; strip GPS from public derivatives.
 - [ ] **TanStack Start deployment: Node server or static export?** — You want SSR for SEO, so it'll be a Node server. Plan for that in your Docker setup.
+
+///////////////////////////////////////////////////////////////////////////
+ME: let's move to task 1.7, deverivative generation. As usual this is a learning journey for me. NO code generation or showing code. I want to walk the tough path and learn how to solve this myself from first principles. I'd say you shouldn't list our the tasks for me but I
+dont even know where to start solving this. So your job is to guide me with the concepts, the whys and help me understand rust concets and idiomatic rust.
+
+AI: 
+Love this. Let me orient you without handing you a checklist — because the most important lesson here is what question to ask first, and most people ask the wrong one.
+
+The trap to avoid
+
+Your instinct will probably be "how do I resize an image in Rust?" — i.e. reach for a library. That's the wrong starting point. The image manipulation is the easy, well-trodden part. The part that actually determines whether your system is correct is a question that has
+nothing to do with images:
+
+▎ What process runs this work, when is it triggered, and what happens if it dies halfway through?
+
+Get that wrong and you have photos stuck in processing forever, or work that silently vanishes on a restart. So start there.
+
+The shape of the territory (a map, not a to-do list)
+
+Whatever you build, the work has five conceptual moments: something triggers it → it fetches the original bytes → it transforms them (decode, resize ladder, encode, blurhash, EXIF) → it stores the results → it finalizes state (processing → ready, or → failed). Hold that
+map loosely. The interesting decisions all live in the first and last moments — the triggering and the state transitions — not the middle.
+
+The first real decision: the execution model
+
+Reason through this design space yourself, but here's the lens to reason with — durability: "if the power cord is yanked mid-encode, what happens?"
+
+- Synchronously inside confirm — you already rejected this, and you should understand why it's the baseline you're improving on: it couples a fast HTTP response to seconds of CPU, and ties up an actix worker. Reject it, but know what you're rejecting.
+- Fire-and-forget background task spawned from confirm — trivially simple, in-process. Now apply the durability lens: the server restarts mid-encode… and that job is gone. The photo sits in processing with nothing coming to rescue it. Ask yourself: is that acceptable?
+  What would recover it?
+- A worker that polls the database for work — slower to react, more moving parts. But durability-wise it's a different universe: the record of "this needs work" lives in Postgres, so a crash just means it gets picked up next poll.
+
+Here's the realization I want you to arrive at rather than be told: you may already have a queue. A photos row with status='processing' and no variants rows is, definitionally, a pending job. The database is the durable record. So "enqueue a job" might not mean a new
+table or Redis — it might just mean "a loop that asks the DB what's unfinished." Sit with whether that's enough for you, or whether you want an explicit jobs table (the answer hinges on questions like: do you need retry counts? scheduled retries? visibility into
+failures? — let those requirements drive the choice, don't pick the fancy option preemptively).
+
+The reason this is the first decision: where the code lives, how it gets its database pool and S3 client, how it recovers, whether it can run more than one at a time — all of that hangs off this choice. Decide it and the rest has a frame.
+
+The one Rust concept that will dominate everything
+
+Independent of which execution model you pick, this will shape your code, so internalize it now: image decode/resize/encode is CPU-bound, synchronous, blocking work — and you must not run it directly on an async (Tokio) thread.
+
+Why this matters, from first principles: Tokio runs your async tasks on a small pool of threads using cooperative scheduling — each task is expected to hit an .await and yield quickly so the thread can serve others. A 3-second image encode never yields; it monopolizes
+that thread, and every other request/task assigned to it stalls. You'd see your whole server get janky whenever a photo processes. The idiomatic escape hatch is tokio::task::spawn_blocking (or handing CPU work to a dedicated pool like rayon): it moves blocking work onto
+threads meant to block, keeping the async runtime responsive. Understanding why — the cooperative-scheduling model, the distinction between "waiting on I/O" (async's job) and "burning CPU" (blocking's job) — is one of the most important mental models in async Rust, and
+this feature is the perfect place to learn it for real.
+
+This also forces you to confront ownership/Send: to hand decoded image data to a blocking thread, that data has to move across the thread boundary, which means thinking about what owns the bytes and whether your types are Send. Good, idiomatic-Rust territory.
+
+Where to actually start
+
+Don't open the image crate docs yet. Start by deciding and sketching the execution model — on paper, in plain language:
+
+1. What thing runs the work? (a task spawned at startup that loops? something else?)
+2. How does it find work to do? (and given your "DB is the queue" option — what exact query represents "an unfinished photo"?)
+3. How does it avoid grabbing the same photo twice if it ever runs concurrently, and what happens to a photo whose processing crashed — how does it get retried, and how do you stop a poison photo from retrying forever?
+4. Where do decode/encode run so they don't block the runtime?
+
+Answer those four in prose first. Once you've got a model you believe in, then we go deep on the image pipeline (the resize-ladder math, why you only ever downscale, the AVIF-encoding-is-expensive reality, blurhash, EXIF extraction) — and the Rust mechanics of moving
+image data across spawn_blocking boundaries.
+
+So: what's your instinct on #1 and #2 — what runs it, and how does it find work? Talk me through your reasoning and I'll push on it.

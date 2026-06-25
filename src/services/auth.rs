@@ -54,7 +54,7 @@ impl AuthServices {
             &validated_username.as_ref(),
             &app_state.jwt_secret.expose_secret(),
         )
-        .map_err(|e| {
+        .map_err(|_| {
             tracing::error!("Error generating JWT");
 
             AppError::JWTCreationFailed

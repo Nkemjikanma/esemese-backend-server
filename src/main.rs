@@ -14,7 +14,7 @@ use aws_sdk_s3::Client;
 
 #[tokio::main]
 async fn main() -> Result<(), AppError> {
-    let environment: Environment = std::env::var("APP_ENV")
+    let _environment: Environment = std::env::var("APP_ENV")
         .unwrap_or_else(|_| "development".to_string())
         .try_into()
         .expect("Failed to load env");

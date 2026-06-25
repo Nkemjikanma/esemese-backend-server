@@ -1,6 +1,6 @@
 use crate::{common::errors::AppError, config, routes::{auth::configure_auth, uploads::configure_uploads}, types::app::AppState};
 use actix_cors::Cors;
-use actix_governor::{Governor, GovernorConfigBuilder};
+use actix_governor::GovernorConfigBuilder;
 use actix_web::middleware::NormalizePath;
 use actix_web::{App, HttpResponse, HttpServer, dev::Server, http, web, error, ResponseError};
 use sqlx::{PgPool, postgres::PgPoolOptions};
@@ -8,7 +8,6 @@ use std::net::TcpListener;
 use std::sync::Arc;
 use std::time::Duration;
 use tracing_actix_web::TracingLogger;
-use crate::types::uploads::ContentType;
 
 pub fn run(listener: TcpListener, app_state: Arc<AppState>) -> Result<Server, AppError> {
     let connection = web::Data::new(app_state);
