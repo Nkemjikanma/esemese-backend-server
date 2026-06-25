@@ -1,14 +1,10 @@
-use actix_web::{web, HttpResponse, Responder};
+use actix_web::web;
 use std::sync::Arc;
 use actix_web::http::StatusCode;
 use crate::common::api::{APIResponse, AppResponse};
 use crate::services::uploads::UploadsService;
 use crate::types::app::AppState;
 use crate::types::uploads::{InitiateUploadsRequest, ConfirmUploadsRequest, InitiateUploadResponse, ConfirmUploadsResponse};
-
-// MIME type allowlist — image/jpeg, image/png, image/webp
-const MAX_PHOTO_SIZE_BYTES: u64 = 50 * 1024 * 1024;
-const MIN_PHOTO_SIZE_BYTES: u64 = 2 * 1024 * 1024;
 
 // Start upload(s)
 pub async fn initiate_uploads(app_state: web::Data<Arc<AppState>>, body: web::Json<InitiateUploadsRequest>) -> AppResponse<InitiateUploadResponse> {

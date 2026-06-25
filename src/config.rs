@@ -133,11 +133,11 @@ impl Config {
             port: std::env::var("DB_PORT")
                 .map_err(|_| ConfigError::MissingEnv("DB_PORT".to_string()))?
                 .parse()
-                .map_err(|e| ConfigError::InvalidEnv("Port hast to be a number".to_string()))?,
+                .map_err(|_| ConfigError::InvalidEnv("Port hast to be a number".to_string()))?,
             host: std::env::var("DB_HOST")
                 .map_err(|_| ConfigError::MissingEnv("DB_HOST".to_string()))?,
             database_name: std::env::var("DB_NAME")
-                .map_err(|e| ConfigError::MissingEnv("DB_NAME".to_string()))?,
+                .map_err(|_| ConfigError::MissingEnv("DB_NAME".to_string()))?,
             require_ssl: true,
         };
 

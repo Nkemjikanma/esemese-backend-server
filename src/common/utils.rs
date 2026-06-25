@@ -54,7 +54,7 @@ impl PasswordUtils {
 
         let password = argon2
             .hash_password(password.as_bytes(), &salt)
-            .map_err(|e| AppError::PasswordHashingError)?
+            .map_err(|_| AppError::PasswordHashingError)?
             .to_string();
 
         Ok(password)

@@ -1,9 +1,10 @@
-use crate::types::{uploads::InitiateUploadsRequest, app::AppState};
 use crate::common::errors::{AppError, UploadsError};
+use super::derivatives::process_derivative_for_photo;
 use std::time::Duration;
 use aws_sdk_s3::{presigning::PresigningConfig};
-use crate::types::uploads::{ConfirmUploadsRequest, ConfirmUploadsResponse, InitiateUploadResponse, PhotoStatus};
+use crate::{types::{uploads::{InitiateUploadsRequest, ConfirmUploadsRequest, ConfirmUploadsResponse, InitiateUploadResponse, PhotoStatus}, app::AppState},};
 use uuid::Uuid;
+
 
 const MAX_PHOTO_SIZE_BYTES: i64 = 50 * 1024 * 1024;
 const MIN_PHOTO_SIZE_BYTES: i64 = 2 * 1024 * 1024;
@@ -28,7 +29,6 @@ impl UploadsService {
 
         let ext = content_type.extension();
         let s3_key = format!("originals/{photo_id}.{ext}");
-        let status = "initiated";
 
         tracing::info!("Adding new upload request to DB");
         sqlx::query!(
@@ -99,8 +99,7 @@ impl UploadsService {
             }
         }
 
-        let update_photo = sqlx::query!(r#"UPDATE photos SET status='processing', title=$2, description=$3, category=$4 WHERE id=$1 AND status='initiated'"#, photo_id, title.as_deref(), description.as_deref(), category.as_deref()).execute(connection).await.map_err(|err|{
-            tracing::error!("Error updating record for the upload");
+        let update_photo = sqlx::query!(r#"UPDATE photos SET status='processing', title=$2, description=$3, category=$4 WHERE id=$1 AND status='initiated'"#, photo_id, title.as_deref(), description.as_deref(), category.as_deref()).execute(connection).await.map_err(|_|{ tracing::error!("Error updating record for the upload");
             UploadsError::ErrorUpdatingPhoto(photo_id.to_string())
         })?;
 
@@ -127,6 +126,27 @@ impl UploadsService {
             status: PhotoStatus::Processing
         };
 
+        // start image derivative gen here - fire and forget function call.
+        let photo_id_bg = *photo_id;
+        // let bucket = app_config.rustfs_config.bucket_photos.clone();
+        let db_pool = connection.clone();
+        let s3 = rustfs_client.clone();
+        let app_cfg = app_config.clone();
+
+        tokio::spawn(async move {
+            let db_pool_err = db_pool.clone();
+
+
+
+           if let Err(e) = process_derivative_for_photo(photo_id_bg, db_pool, s3, app_cfg).await {
+              tracing::error!("Derivative generation failed for photo_id={}: {}", photo_id_bg, e );
+
+               // best-effort: mark the photo failed so the gallery filters it out
+               let _ = sqlx::query!(r#"UPDATE photos SET status='failed' WHERE id=$1"#, photo_id_bg).execute(&db_pool_err).await;
+           }
+        });
+
         Ok(confirm_response)
     }
 }
+

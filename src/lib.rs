@@ -6,3 +6,4 @@ pub mod services;
 pub mod startup;
 pub mod telemetry;
 pub mod types;
+pub mod image_processing;

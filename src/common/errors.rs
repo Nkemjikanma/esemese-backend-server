@@ -3,7 +3,6 @@ use actix_web::{
     error::ResponseError,
     http::{StatusCode, header::ContentType},
 };
-use serde::Serialize;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -39,7 +38,40 @@ pub enum UploadsError{
 }
 
 #[derive(Error, Debug)]
+pub enum DerivativesGenerationError {
+   #[error("There was a problem downloading the image from the bucket")]
+   ObjectDownloadError,
+
+    #[error("There was an error extracting the bytes from downloaded object")]
+    BytesExtractionError,
+
+    #[error("There was an error loading the downloaded bytes for processing")]
+    ImageByteReadingError,
+
+    #[error("There was an error extracting image from reader")]
+    ReaderExtractionError,
+
+    #[error("Something went wrong while encoding image to avif")]
+    AVIFEncodingError,
+
+    #[error("Error generating blurhash")]
+    BlurhashCreationError,
+
+    #[error("Image processing error: {0}")]
+    ImageProcessingError(String),
+
+    #[error("Variant upload error")]
+    ObjectUploadError,
+
+    #[error("Derivative persistence error: {0}")]
+    ErrorRecordingVariants(String)
+}
+
+#[derive(Error, Debug)]
 pub enum AppError {
+    #[error(transparent)]
+    Derivatives(#[from] DerivativesGenerationError),
+
     #[error(transparent)]
     Uploads(#[from] UploadsError),
 
@@ -97,6 +129,16 @@ impl ResponseError for AppError {
             AppError::Uploads(UploadsError::PhotoQueryError(_)) => StatusCode::INTERNAL_SERVER_ERROR,
             AppError::Uploads(UploadsError::HeadObjectError(_)) => StatusCode::INTERNAL_SERVER_ERROR,
             AppError::Uploads(UploadsError::ErrorUpdatingPhoto(_)) => StatusCode::INTERNAL_SERVER_ERROR,
+
+            AppError::Derivatives(DerivativesGenerationError::ObjectDownloadError) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Derivatives(DerivativesGenerationError::BytesExtractionError) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Derivatives(DerivativesGenerationError::ImageByteReadingError) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Derivatives(DerivativesGenerationError::ReaderExtractionError) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Derivatives(DerivativesGenerationError::AVIFEncodingError) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Derivatives(DerivativesGenerationError::BlurhashCreationError) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Derivatives(DerivativesGenerationError::ImageProcessingError(_)) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Derivatives(DerivativesGenerationError::ObjectUploadError) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Derivatives(DerivativesGenerationError::ErrorRecordingVariants(_)) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }
