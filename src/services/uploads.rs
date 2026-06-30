@@ -1,5 +1,4 @@
 use crate::common::errors::{AppError, UploadsError};
-use super::derivatives::process_derivative_for_photo;
 use std::time::Duration;
 use aws_sdk_s3::{presigning::PresigningConfig};
 use crate::{types::{uploads::{InitiateUploadsRequest, ConfirmUploadsRequest, ConfirmUploadsResponse, InitiateUploadResponse, PhotoStatus}, app::AppState},};
@@ -63,7 +62,7 @@ impl UploadsService {
     pub async fn confirm_upload_exists(request_body: &ConfirmUploadsRequest, app_state: &AppState) -> Result<ConfirmUploadsResponse, AppError> {
         tracing::info!("Confirming the upload to bucket");
         let ConfirmUploadsRequest {photo_id, title, description, category} = request_body;
-        let AppState {connection, rustfs_client, app_config} = app_state;
+        let AppState {connection, rustfs_client, app_config, notify_on_confirm} = app_state;
 
         let photo_record = sqlx::query!(r#"SELECT id, s3_key, status AS "status: PhotoStatus" FROM photos WHERE id = $1"#, photo_id).fetch_one(connection).await.map_err(|err: sqlx::Error| {
            tracing::error!("Can't find photo in our DB");
@@ -121,30 +120,13 @@ impl UploadsService {
             }
         }
 
+        // notify on confirm ping worker to start derivatives generation
+        notify_on_confirm.notify_one();
+
         let confirm_response = ConfirmUploadsResponse {
             photo_id: *photo_id,
             status: PhotoStatus::Processing
         };
-
-        // start image derivative gen here - fire and forget function call.
-        let photo_id_bg = *photo_id;
-        // let bucket = app_config.rustfs_config.bucket_photos.clone();
-        let db_pool = connection.clone();
-        let s3 = rustfs_client.clone();
-        let app_cfg = app_config.clone();
-
-        tokio::spawn(async move {
-            let db_pool_err = db_pool.clone();
-
-
-
-           if let Err(e) = process_derivative_for_photo(photo_id_bg, db_pool, s3, app_cfg).await {
-              tracing::error!("Derivative generation failed for photo_id={}: {}", photo_id_bg, e );
-
-               // best-effort: mark the photo failed so the gallery filters it out
-               let _ = sqlx::query!(r#"UPDATE photos SET status='failed' WHERE id=$1"#, photo_id_bg).execute(&db_pool_err).await;
-           }
-        });
 
         Ok(confirm_response)
     }

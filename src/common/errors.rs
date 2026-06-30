@@ -4,6 +4,7 @@ use actix_web::{
     http::{StatusCode, header::ContentType},
 };
 use thiserror::Error;
+use image::ImageError;
 
 #[derive(Error, Debug)]
 pub enum ConfigError {
@@ -64,7 +65,13 @@ pub enum DerivativesGenerationError {
     ObjectUploadError,
 
     #[error("Derivative persistence error: {0}")]
-    ErrorRecordingVariants(String)
+    ErrorRecordingVariants(String),
+
+    #[error("Image into_decoder for orientation error")]
+    IntoDecoderError(#[from] ImageError ),
+
+    #[error("Exif parsing error")]
+    ExifParsingError(#[from] exif::Error)
 }
 
 #[derive(Error, Debug)]
@@ -139,6 +146,8 @@ impl ResponseError for AppError {
             AppError::Derivatives(DerivativesGenerationError::ImageProcessingError(_)) => StatusCode::INTERNAL_SERVER_ERROR,
             AppError::Derivatives(DerivativesGenerationError::ObjectUploadError) => StatusCode::INTERNAL_SERVER_ERROR,
             AppError::Derivatives(DerivativesGenerationError::ErrorRecordingVariants(_)) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Derivatives(DerivativesGenerationError::IntoDecoderError(_)) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Derivatives(DerivativesGenerationError::ExifParsingError(_)) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }

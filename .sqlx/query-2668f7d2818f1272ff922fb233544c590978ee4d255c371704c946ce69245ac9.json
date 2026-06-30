@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM photos WHERE status = 'initiated' and created_at < now() -\n       interval '1 hours'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "2668f7d2818f1272ff922fb233544c590978ee4d255c371704c946ce69245ac9"
+}

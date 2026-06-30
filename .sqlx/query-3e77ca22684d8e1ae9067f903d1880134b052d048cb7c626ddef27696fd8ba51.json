@@ -1,0 +1,47 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, s3_key, status AS \"status: PhotoStatus\" FROM photos WHERE id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "s3_key",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "status: PhotoStatus",
+        "type_info": {
+          "Custom": {
+            "name": "photo_status",
+            "kind": {
+              "Enum": [
+                "initiated",
+                "uploaded",
+                "processing",
+                "ready",
+                "failed"
+              ]
+            }
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "3e77ca22684d8e1ae9067f903d1880134b052d048cb7c626ddef27696fd8ba51"
+}

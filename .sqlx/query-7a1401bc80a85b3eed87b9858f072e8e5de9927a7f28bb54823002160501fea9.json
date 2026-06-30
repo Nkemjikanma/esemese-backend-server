@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE photos SET status = 'failed' WHERE status = 'processing'\n                                              AND attempts >= 3\n                                              AND (claimed_at IS NULL OR claimed_at < now() - interval '1 hour')",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "7a1401bc80a85b3eed87b9858f072e8e5de9927a7f28bb54823002160501fea9"
+}

@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO variants (photo_id, s3_key, width, height, format, byte_size)\n               VALUES ($1, $2, $3, $4, 'avif', $5)\n               ON CONFLICT (photo_id, width, format) DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Int4",
+        "Int4",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "13b9755055ceb4bb15280b000dba5fdbaf54024b67799be6c24b935e90558748"
+}
