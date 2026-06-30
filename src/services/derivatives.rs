@@ -6,6 +6,7 @@ use uuid::Uuid;
 use crate::common::errors::{AppError, DerivativesGenerationError, UploadsError};
 use crate::config::Config;
 use crate::image_processing::process_image;
+use crate::types::derivatives::PhotoMetadata;
 
 pub async fn process_derivative_for_photo(id: Uuid, db_pool: PgPool, s3: Client, app_cfg: Config) -> Result<(), AppError>{
     // Fetch the s3_key,status/ from DB
@@ -37,6 +38,26 @@ pub async fn process_derivative_for_photo(id: Uuid, db_pool: PgPool, s3: Client,
         DerivativesGenerationError::ImageProcessingError(e.to_string())
     })??;
 
+    let PhotoMetadata {
+        camera,
+        lens,
+        iso,
+        aperture,
+        shutter_speed,
+        focal_length,
+        taken_at
+    } = processed.photo_metadata;
+
+    // TODO: What happens if metadeta has already been updated but the derivatives failed? - Make indempodent
+    // Updating metatdata shouldn't be blocking.
+    // Update the photo metadata here, before handling the derivatives
+    let metadata_insert = sqlx::query!(r#"INSERT INTO photo_metadata (photo_id, camera, lens, iso, aperture,
+    shutter_speed, focal_length, taken_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)"#, id, camera, lens, iso,
+        aperture, shutter_speed, focal_length, taken_at).execute(&db_pool).await;
+
+    if metadata_insert.is_err() {
+        tracing::warn!("Failed to insert metatdata information into database");
+    }
 
     // open the transaction BEFORE the loop so the variant inserts + status flip commit atomically
     let mut tx = db_pool.begin().await.map_err(|e| {
@@ -69,7 +90,7 @@ pub async fn process_derivative_for_photo(id: Uuid, db_pool: PgPool, s3: Client,
 
     // any photo reaching here has >= 1 derivative (process_image errors if all widths fail);
     sqlx::query!(
-        r#"UPDATE photos SET blurhash=$1, status='ready' WHERE id=$2"#,
+        r#"UPDATE photos SET blurhash=$1, status='ready', updated_at = now() WHERE id=$2"#,
         processed.blurhash, id,
     ).execute(&mut *tx).await.map_err(|e| {
         tracing::error!("Failed to flip photo status to ready");

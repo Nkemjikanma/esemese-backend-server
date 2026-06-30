@@ -163,9 +163,10 @@ A portfolio is the inverse of Dropbox: the gallery is *meant* to be seen by ever
 Dropbox's hard problem is sync/chunking; *this* system's hard problem is serving the right pixels fast. Invest here.
 
 - [x] Generate a **responsive ladder**, not 2 sizes — e.g. widths 400 / 800 / 1200 / 1600 / 2400. Serving a 24MP original into a 300px grid cell is the #1 portfolio perf sin.
-- [x] Generate **modern formats** — AVIF (best compression) with WebP fallback; can cut bytes 50-70% vs JPEG.
+- [x] Generate **modern formats** — **AVIF only for now** (best compression; cuts bytes 50-70% vs JPEG). WebP fallback is deferred; revisit if a target browser can't decode AVIF.
 - [x] Compute a **blurhash/LQIP** once and store on `photos.blurhash` — makes the gallery feel instant.
-- [ ] **Bake in orientation** and **strip GPS/EXIF** from public derivatives (don't publish your home coordinates).
+- [x] **Bake in orientation** and **strip GPS/EXIF** from public derivatives 
+  (don't publish your home coordinates).
 - [x] Write one `photo_variants` row per `(photo_id, width, format)`; upload each to the public derivative prefix (content-addressed key).
 - [x] Flip `photos.status` → `ready` only once the variant set is complete.
 
@@ -369,8 +370,9 @@ A Rust CLI that syncs a local photo directory to your portfolio. Folder = collec
 
 - [x] ~~**Hetzner Object Storage vs self-hosted object storage?**~~ — Going with RustFS on the VPS (dev and prod). Escape hatches: swap to MinIO (same ports/API) if RustFS has bugs, or swap endpoint to Hetzner Object Storage if you outgrow the disk.
 - [x] ~~**Thumbnails: public or presigned?**~~ — **Public derivatives behind CDN, presign only the private original** (decided 2026-06-08, see 1.5). Portfolio is read-heavy public content; presigning it would break caching.
-- [x] ~~**Derivative sizes?**~~ — **Responsive ladder (400/800/1200/1600/2400) × AVIF+WebP, modelled as a `photo_variants` table**, generated **async** (see 1.7). Replaces the fixed `thumbnail_s3_key_small/_medium` columns.
-- [ ] **Single bucket with prefixes vs multiple buckets?** — e.g. `originals/` (private) vs `variants/` (public). Prefixes are simplest; the visibility split is what matters, not the bucket count.
+- [x] ~~**Derivative sizes?**~~ — **Responsive ladder (400/800/1200/1600/2400), AVIF only for now, modelled as a `photo_variants` table**, generated **async** (see 1.7). Replaces the fixed `thumbnail_s3_key_small/_medium` columns. (WebP fallback deferred — `photo_variants.format` already allows adding it later as data, not a migration.)
+- [x] **Single bucket with prefixes vs multiple buckets?** — e.g. 
+  `originals/` (private) vs `variants/` (public). Prefixes are simplest; the visibility split is what matters, not the bucket count.
 - [x] ~~**Original keys: content-addressed vs filename?**~~ — **`photos.s3_key = originals/{photo_id}` (UUID)** (decided 2026-06-08, see 1.4). Dedupe isn't needed at single-photographer scale; immutability is recovered on the variants by content-hashing them server-side. Browser never hashes.
 - [ ] **Multipart upload for large files or just single PUT?** — Single PUT is sufficient for photos. Multipart is an optional Dropbox-like learning exercise.
 - [x] ~~**EXIF extraction: client-side or server-side?**~~ — **Server-side** (`kamadak-exif`), during async processing. Never trust client metadata; strip GPS from public derivatives.

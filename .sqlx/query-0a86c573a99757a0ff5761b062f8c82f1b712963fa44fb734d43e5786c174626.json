@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE photos SET status='processing', title=$2, description=$3, category=$4 WHERE id=$1 AND status='initiated'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Text",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "0a86c573a99757a0ff5761b062f8c82f1b712963fa44fb734d43e5786c174626"
+}

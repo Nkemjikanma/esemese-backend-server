@@ -1,0 +1,26 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE photos SET claimed_at = now(), attempts = attempts + 1 WHERE id IN\n        (SELECT id FROM photos\n                   WHERE status = 'processing'\n                     AND (claimed_at IS NULL OR claimed_at < now() - interval '5 minutes')\n                     AND attempts < 3\n                   ORDER BY created_at\n                   LIMIT 5)\n                   RETURNING id, attempts",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "attempts",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "39801930f8293dc46efbf4b7426461f12f8078c50d10c81e061d767ae50f1d8d"
+}
