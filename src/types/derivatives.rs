@@ -5,7 +5,7 @@ use uuid::Uuid;
 pub struct PhotoMetadata {
     pub camera: Option<String>,
     pub lens: Option<String>,
-    pub iso: Option<i32>,
+    pub iso: Option<u32>,
     pub aperture: Option<String>,        // "f/2.8"
     pub shutter_speed: Option<String>,   // "1/250"
     pub focal_length: Option<String>,    // "50 mm"

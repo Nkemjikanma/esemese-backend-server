@@ -75,7 +75,22 @@ pub enum DerivativesGenerationError {
 }
 
 #[derive(Error, Debug)]
+pub enum PhotosError {
+    #[error("There was an error fetching photo: {0}")]
+    ErrorFetchingPhotos(String),
+
+    #[error("There wan an error getting photo: {0}")]
+    PhotoNotFound(String),
+
+    #[error("Something went wrong while retrieving book: {0}")]
+    PhotoQueryError(String),
+}
+
+#[derive(Error, Debug)]
 pub enum AppError {
+    #[error(transparent)]
+    Photos(#[from] PhotosError),
+
     #[error(transparent)]
     Derivatives(#[from] DerivativesGenerationError),
 
@@ -148,6 +163,10 @@ impl ResponseError for AppError {
             AppError::Derivatives(DerivativesGenerationError::ErrorRecordingVariants(_)) => StatusCode::INTERNAL_SERVER_ERROR,
             AppError::Derivatives(DerivativesGenerationError::IntoDecoderError(_)) => StatusCode::INTERNAL_SERVER_ERROR,
             AppError::Derivatives(DerivativesGenerationError::ExifParsingError(_)) => StatusCode::INTERNAL_SERVER_ERROR,
+
+            AppError::Photos(PhotosError::ErrorFetchingPhotos(_)) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Photos(PhotosError::PhotoNotFound(_)) => StatusCode::NOT_FOUND,
+            AppError::Photos(PhotosError::PhotoQueryError(_)) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }
