@@ -8,6 +8,8 @@ use std::net::TcpListener;
 use std::sync::Arc;
 use std::time::Duration;
 use tracing_actix_web::TracingLogger;
+use crate::routes::collections::configure_collections;
+use crate::routes::photos::configure_photos;
 
 pub fn run(listener: TcpListener, app_state: Arc<AppState>) -> Result<Server, AppError> {
     let connection = web::Data::new(app_state);
@@ -62,9 +64,12 @@ pub fn run(listener: TcpListener, app_state: Arc<AppState>) -> Result<Server, Ap
                 "/health",
                 web::get().to(|| async { HttpResponse::Ok().finish() }),
             )
-            .configure(|cfg| configure_auth(cfg, &governor_config))
-            .configure(configure_uploads)
-            .service(web::scope("/api"))
+            .service(web::scope("/api")
+                .configure(|cfg| configure_auth(cfg, &governor_config))
+                .configure(configure_uploads)
+                .configure(configure_photos)
+                .configure(configure_collections)
+            )
             .app_data(connection.clone())
             .app_data(json_config)
     })

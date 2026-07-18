@@ -107,7 +107,8 @@ pending → initiating → uploading → confirming → done
 - [x] Implement `POST /uploads/initiate` — validate file type/size, generate S3 key, create presigned PUT URL, store pending upload in DB
 - [x] Implement `POST /uploads/confirm` — verify object exists in S3, save photo record + metadata to DB
 - [x] Add upload state tracking in DB (initiated, uploaded, confirmed, failed)
-- [ ] Add cleanup job for stale initiated uploads (e.g., cron or background task that deletes uploads stuck in "initiated" for more than 1 hour — also delete the orphaned S3 object if it exists)
+- [x] Add cleanup job for stale initiated uploads (e.g., cron or background 
+  task that deletes uploads stuck in "initiated" for more than 1 hour — also delete the orphaned S3 object if it exists)
 
 **Upload method: presigned PUT, size enforced at confirm (decided 2026-06-08).** We chose PUT over POST: the Rust `aws-sdk-s3` gives PUT presigning in one call but has **no presigned-POST helper** (you'd hand-roll the SigV4 POST policy). POST's only real win — `content-length-range` enforced at the storage edge — is low value for a single-admin tool where the client is you. Revisit POST only if uploads ever open to other users.
 
@@ -141,10 +142,10 @@ A portfolio is the inverse of Dropbox: the gallery is *meant* to be seen by ever
 ### 1.6 — CRUD Endpointvs
 
 **Public (no auth):**
-- [ ] `GET /photos` — list photos (paginated, filterable by category/collection)
-- [ ] `GET /photos/:id` — single photo with metadata
-- [ ] `GET /collections` — list collections
-- [ ] `GET /collections/:slug` — collection detail with photos
+- [x] `GET /photos` — list photos (paginated, filterable by category/collection)
+- [x] `GET /photos/:id` — single photo with metadata
+- [x] `GET /collections` — list collections
+- [x] `GET /collections/:slug` — collection detail with photos
 - [ ] `GET /photos/:id/original-url` — presigned URL for the **private original** only (from 1.5). Public variant URLs come back inline on the list/detail responses — no per-image presign.
 
 **Admin (authed):**

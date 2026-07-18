@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT COUNT(*) FROM photos p\n                WHERE status='ready'\n                  AND ($1::text IS NULL OR category = $1)\n                  AND ($2::uuid IS NULL OR EXISTS (\n                  SELECT 1 FROM collection_photos cp\n                  WHERE cp.photo_id = p.id AND cp.collection_id = $2))",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "count",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "a4137493dc85622f0c0ab402b8d01cf45fc6e8c1542d162d98a51bf5fd5dfd15"
+}

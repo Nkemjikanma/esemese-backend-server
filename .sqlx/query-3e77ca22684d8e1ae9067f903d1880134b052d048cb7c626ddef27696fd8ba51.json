@@ -6,12 +6,24 @@
       {
         "ordinal": 0,
         "name": "id",
-        "type_info": "Uuid"
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "photos",
+            "name": "id"
+          }
+        }
       },
       {
         "ordinal": 1,
         "name": "s3_key",
-        "type_info": "Varchar"
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "photos",
+            "name": "s3_key"
+          }
+        }
       },
       {
         "ordinal": 2,
@@ -28,6 +40,12 @@
                 "failed"
               ]
             }
+          }
+        },
+        "origin": {
+          "Table": {
+            "table": "photos",
+            "name": "status"
           }
         }
       }
