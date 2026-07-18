@@ -5,11 +5,13 @@ use crate::common::api::{APIResponse, AppResponse};
 use crate::types::{app::AppState, photos::{Photo, Photos, PhotosQueryInfo}};
 use crate::services::photos::PhotosService;
 use uuid::Uuid;
+use crate::types::common::{PaginatedResponse, Pagination};
 
 // TODO: List of all photos (Paginated, filterable by collection)
 pub async fn get_all_photos(query: web::Query<PhotosQueryInfo>,
-                            app_state: web::Data<Arc<AppState>>) -> AppResponse<Photos>{
-	let photos = PhotosService::get_all_photos(query.into_inner(), &app_state.connection).await?;
+                            pagination: web::Query<Pagination>,
+                            app_state: web::Data<Arc<AppState>>) -> AppResponse<PaginatedResponse<Photo>>{
+	let photos = PhotosService::get_all_photos(query.into_inner(), pagination.into_inner(), &app_state.connection).await?;
 	Ok((APIResponse::success(photos), StatusCode::OK))
 }
 

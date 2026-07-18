@@ -42,9 +42,9 @@ pub fn process_image(image_bytes: Vec<u8>) -> Result<Processed, DerivativesGener
 	let lens = exif.as_ref()
 		.and_then(|e| e.get_field(exif::Tag::LensModel, exif::In::PRIMARY)
 			.map(|f| f.display_value().to_string())); // asWell as this - they are
-	let iso: Option<u32> = exif.as_ref()
+	let iso: Option<i32> = exif.as_ref()
 		.and_then(|e| e.get_field(exif::Tag::PhotographicSensitivity, exif::In::PRIMARY)
-			.map(|f| f.value.get_uint(0).unwrap()));// let's think of improving and getting unwrap out
+			.map(|f| f.value.get_uint(0).unwrap())).map(|v| v as i32);// let's think of improving and getting unwrap out
 	let aperture = exif.as_ref()
 		.and_then(|e| e.get_field(exif::Tag::FNumber, exif::In::PRIMARY)
 			.map(|f| f.display_value().to_string()));

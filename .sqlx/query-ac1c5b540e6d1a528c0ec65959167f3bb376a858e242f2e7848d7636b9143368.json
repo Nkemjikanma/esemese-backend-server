@@ -6,12 +6,24 @@
       {
         "ordinal": 0,
         "name": "s3_key",
-        "type_info": "Varchar"
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "photos",
+            "name": "s3_key"
+          }
+        }
       },
       {
         "ordinal": 1,
         "name": "title",
-        "type_info": "Varchar"
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "photos",
+            "name": "title"
+          }
+        }
       }
     ],
     "parameters": {

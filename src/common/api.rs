@@ -10,10 +10,10 @@ pub struct APIResponse<T> {
 }
 
 impl<T: Serialize> APIResponse<T> {
-    pub fn success(data: T) -> Json<Self> {
+    pub fn success(items: T) -> Json<Self> {
         Json(Self {
             response_message: "success".to_string(),
-            response_data: data,
+            response_data: items,
         })
     }
 }

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE photos SET blurhash=$1, status='ready' WHERE id=$2",
+  "query": "UPDATE photos SET blurhash=$1, status='ready', updated_at = now() WHERE id=$2",
   "describe": {
     "columns": [],
     "parameters": {
@@ -11,5 +11,5 @@
     },
     "nullable": []
   },
-  "hash": "688d8cbf909ff72a17913a4d349bfb41eae27305c7461ab05667e727eb96fbfb"
+  "hash": "5d53aafbe80fa9d847f148ed19564bccadbffdc135e7ba4598ab97a44131cab8"
 }

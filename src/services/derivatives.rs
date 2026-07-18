@@ -51,6 +51,7 @@ pub async fn process_derivative_for_photo(id: Uuid, db_pool: PgPool, s3: Client,
     // TODO: What happens if metadeta has already been updated but the derivatives failed? - Make indempodent
     // Updating metatdata shouldn't be blocking.
     // Update the photo metadata here, before handling the derivatives
+    // map iso to i32
     let metadata_insert = sqlx::query!(r#"INSERT INTO photo_metadata (photo_id, camera, lens, iso, aperture,
     shutter_speed, focal_length, taken_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)"#, id, camera, lens, iso,
         aperture, shutter_speed, focal_length, taken_at).execute(&db_pool).await;

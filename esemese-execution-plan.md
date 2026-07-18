@@ -142,10 +142,10 @@ A portfolio is the inverse of Dropbox: the gallery is *meant* to be seen by ever
 ### 1.6 — CRUD Endpointvs
 
 **Public (no auth):**
-- [ ] `GET /photos` — list photos (paginated, filterable by category/collection)
-- [ ] `GET /photos/:id` — single photo with metadata
-- [ ] `GET /collections` — list collections
-- [ ] `GET /collections/:slug` — collection detail with photos
+- [x] `GET /photos` — list photos (paginated, filterable by category/collection)
+- [x] `GET /photos/:id` — single photo with metadata
+- [x] `GET /collections` — list collections
+- [x] `GET /collections/:slug` — collection detail with photos
 - [ ] `GET /photos/:id/original-url` — presigned URL for the **private original** only (from 1.5). Public variant URLs come back inline on the list/detail responses — no per-image presign.
 
 **Admin (authed):**

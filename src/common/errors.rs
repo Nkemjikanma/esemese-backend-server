@@ -82,14 +82,29 @@ pub enum PhotosError {
     #[error("There wan an error getting photo: {0}")]
     PhotoNotFound(String),
 
-    #[error("Something went wrong while retrieving book: {0}")]
+    #[error("Something went wrong while retrieving photo: {0}")]
     PhotoQueryError(String),
+
+    #[error("There was an error fetching collections: {0}")]
+    ErrorFetchingCollections(String),
+}
+
+#[derive(Debug, Error)]
+pub enum CollectionError {
+    #[error("There wan an error getting collection: {0}")]
+    CollectionNotFound(String),
+
+    #[error("Something went wrong while retrieving collection: {0}")]
+    CollectionQueryError(String),
 }
 
 #[derive(Error, Debug)]
 pub enum AppError {
     #[error(transparent)]
     Photos(#[from] PhotosError),
+
+    #[error(transparent)]
+    Collection(#[from] CollectionError),
 
     #[error(transparent)]
     Derivatives(#[from] DerivativesGenerationError),
@@ -167,6 +182,10 @@ impl ResponseError for AppError {
             AppError::Photos(PhotosError::ErrorFetchingPhotos(_)) => StatusCode::INTERNAL_SERVER_ERROR,
             AppError::Photos(PhotosError::PhotoNotFound(_)) => StatusCode::NOT_FOUND,
             AppError::Photos(PhotosError::PhotoQueryError(_)) => StatusCode::INTERNAL_SERVER_ERROR,
+
+            AppError::Photos(PhotosError::ErrorFetchingCollections(_)) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Collection(CollectionError::CollectionNotFound(_)) => StatusCode::NOT_FOUND,
+            AppError::Collection(CollectionError::CollectionQueryError(_)) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }
