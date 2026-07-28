@@ -1,15 +1,20 @@
-use crate::{common::errors::AppError, config, routes::{auth::configure_auth, uploads::configure_uploads}, types::app::AppState};
+use crate::routes::collections::configure_collections;
+use crate::routes::photos::configure_photos;
+use crate::{
+    common::errors::AppError,
+    config,
+    routes::{auth::configure_auth, uploads::configure_uploads},
+    types::app::AppState,
+};
 use actix_cors::Cors;
 use actix_governor::GovernorConfigBuilder;
 use actix_web::middleware::NormalizePath;
-use actix_web::{App, HttpResponse, HttpServer, dev::Server, http, web, error, ResponseError};
+use actix_web::{App, HttpResponse, HttpServer, ResponseError, dev::Server, error, http, web};
 use sqlx::{PgPool, postgres::PgPoolOptions};
 use std::net::TcpListener;
 use std::sync::Arc;
 use std::time::Duration;
 use tracing_actix_web::TracingLogger;
-use crate::routes::collections::configure_collections;
-use crate::routes::photos::configure_photos;
 
 pub fn run(listener: TcpListener, app_state: Arc<AppState>) -> Result<Server, AppError> {
     let connection = web::Data::new(app_state);
@@ -22,29 +27,35 @@ pub fn run(listener: TcpListener, app_state: Arc<AppState>) -> Result<Server, Ap
 
     let server = HttpServer::new(move || {
         // ensure correct mime type
-        let json_config = web::JsonConfig::default().content_type(move |mime| {
-            mime.to_string() == "image/jpg" || mime.to_string() == "image/png" || mime.to_string() == "image/webp"
-        }).error_handler(|err, _req| {
-            tracing::error!(%err, "A deserialization error has occured");
+        let json_config = web::JsonConfig::default()
+            .content_type(move |mime| {
+                mime.to_string() == "image/jpg"
+                    || mime.to_string() == "image/png"
+                    || mime.to_string() == "image/webp"
+            })
+            .error_handler(|err, _req| {
+                tracing::error!(%err, "A deserialization error has occured");
 
-            let api_error = match &err {
-                error::JsonPayloadError::Deserialize(e) => {
-                    tracing::error!("Error deserializing the input");
+                let api_error = match &err {
+                    error::JsonPayloadError::Deserialize(e) => {
+                        tracing::error!("Error deserializing the input");
 
-                    AppError::InputValidationError(e.to_string())
-                }
-                error::JsonPayloadError::ContentType => {
-                    tracing::error!("Wrong mime type provided");
-                    AppError::InvalidContentType(err.to_string())
-                }
-                _ => {
-                    tracing::error!("Something went wrong and we need to check the JsonConfig in startup.rs");
-                    AppError::InputValidationError(err.to_string())
-                }
-            };
+                        AppError::InputValidationError(e.to_string())
+                    }
+                    error::JsonPayloadError::ContentType => {
+                        tracing::error!("Wrong mime type provided");
+                        AppError::InvalidContentType(err.to_string())
+                    }
+                    _ => {
+                        tracing::error!(
+                            "Something went wrong and we need to check the JsonConfig in startup.rs"
+                        );
+                        AppError::InputValidationError(err.to_string())
+                    }
+                };
 
-            error::InternalError::from_response(err, api_error.error_response()).into()
-        });
+                error::InternalError::from_response(err, api_error.error_response()).into()
+            });
         App::new()
             .wrap(
                 Cors::default()
@@ -64,11 +75,12 @@ pub fn run(listener: TcpListener, app_state: Arc<AppState>) -> Result<Server, Ap
                 "/health",
                 web::get().to(|| async { HttpResponse::Ok().finish() }),
             )
-            .service(web::scope("/api")
-                .configure(|cfg| configure_auth(cfg, &governor_config))
-                .configure(configure_uploads)
-                .configure(configure_photos)
-                .configure(configure_collections)
+            .service(
+                web::scope("/api")
+                    .configure(|cfg| configure_auth(cfg, &governor_config))
+                    .configure(configure_uploads)
+                    .configure(configure_photos)
+                    .configure(configure_collections),
             )
             .app_data(connection.clone())
             .app_data(json_config)

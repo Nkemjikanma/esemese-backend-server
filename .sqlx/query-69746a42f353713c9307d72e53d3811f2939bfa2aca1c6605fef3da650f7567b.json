@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT p.id, p.title, p.description, p.category, p.featured,\n\t\t p.blurhash, p.s3_key, p.created_at, p.updated_at FROM photos p\n\t\t                                WHERE p.status = 'ready'\n\t\t                                  AND ($1::text IS NULL OR p.category = $1)\n\t\t                                  AND ($2::uuid IS NULL OR EXISTS (\n\t\t                                  \tSELECT 1 FROM collection_photos cp\n\t\t                                  \tWHERE cp.photo_id = p.id AND cp.collection_id = $2))\n\t\t                                ORDER BY p.created_at DESC, p.id DESC LIMIT $3 OFFSET $4",
+  "query": "SELECT p.id, p.title, p.description, p.category, p.featured,\n\t\t p.blurhash, p.s3_key, p.created_at, p.updated_at FROM photos p\n\t\t                                WHERE p.status = 'ready'\n\t\t                                  AND ($1::text IS NULL OR p.category = $1)\n\t\t                                  AND ($2::uuid IS NULL OR EXISTS (\n\t\t                                  \tSELECT 1 FROM collection_photos cp\n\t\t                                  \tWHERE cp.photo_id = p.id AND cp.collection_id = $2))\n\t\t                               \t  AND ($3::text IS NULL OR EXISTS (\n\t\t                               \t  \tSELECT 1 FROM collection_photos cp\n\t\t                               \t  \tJOIN collections c ON c.id = cp.collection_id\n\t\t                               \t  \tWHERE cp.photo_id = p.id AND c.slug = $3))\n\t\t                                ORDER BY p.created_at DESC, p.id DESC LIMIT $4 OFFSET $5",
   "describe": {
     "columns": [
       {
@@ -107,6 +107,7 @@
       "Left": [
         "Text",
         "Uuid",
+        "Text",
         "Int8",
         "Int8"
       ]
@@ -123,5 +124,5 @@
       false
     ]
   },
-  "hash": "36d8fb10a56320b8cef6ae11a6a594560bd72ceed4a54a52a307d92823d8b608"
+  "hash": "69746a42f353713c9307d72e53d3811f2939bfa2aca1c6605fef3da650f7567b"
 }

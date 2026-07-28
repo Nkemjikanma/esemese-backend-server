@@ -1,4 +1,4 @@
 pub mod auth;
-pub mod uploads;
-pub mod photos;
 pub mod collections;
+pub mod photos;
+pub mod uploads;

@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 #[derive(Deserialize, Serialize, Debug)]
-pub struct InitiateUploadsRequest{
+pub struct InitiateUploadsRequest {
     pub file_name: String,
     pub content_type: ContentType,
     pub file_size: i64,
@@ -14,7 +14,7 @@ pub enum ContentType {
     #[serde(rename = "image/png")]
     ImagePng,
     #[serde(rename = "image/webp")]
-    ImageWebp
+    ImageWebp,
 }
 
 impl ContentType {
@@ -22,15 +22,15 @@ impl ContentType {
         match self {
             ContentType::ImageJpeg => "image/jpeg",
             ContentType::ImagePng => "image/png",
-            ContentType::ImageWebp => "image/webp"
+            ContentType::ImageWebp => "image/webp",
         }
     }
 
-   pub fn extension(&self) -> &str {
+    pub fn extension(&self) -> &str {
         match self {
             ContentType::ImageJpeg => "jpeg",
             ContentType::ImagePng => "png",
-            ContentType::ImageWebp => "webp"
+            ContentType::ImageWebp => "webp",
         }
     }
 }
@@ -41,7 +41,6 @@ pub struct InitiateUploadResponse {
     pub uri: String,
 }
 
-
 #[derive(Serialize, Debug, sqlx::Type, PartialEq, Copy, Clone)]
 #[sqlx(type_name = "photo_status", rename_all = "lowercase")]
 #[serde(rename_all = "lowercase")]
@@ -50,11 +49,12 @@ pub enum PhotoStatus {
     Uploaded,
     Processing,
     Ready,
-    Failed
+    Failed,
+    Deleting,
 }
 
 #[derive(Deserialize, Debug)]
-pub struct ConfirmUploadsRequest{
+pub struct ConfirmUploadsRequest {
     pub photo_id: Uuid,
     pub title: Option<String>,
     pub description: Option<String>,
@@ -63,6 +63,6 @@ pub struct ConfirmUploadsRequest{
 
 #[derive(Serialize, Debug)]
 pub struct ConfirmUploadsResponse {
-   pub photo_id: Uuid,
+    pub photo_id: Uuid,
     pub status: PhotoStatus,
 }

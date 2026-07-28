@@ -1,5 +1,5 @@
-use actix_web::http::StatusCode;
 use crate::common::errors::AppError;
+use actix_web::http::StatusCode;
 use actix_web::web::Json;
 use serde::Serialize;
 

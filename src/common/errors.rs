@@ -3,8 +3,8 @@ use actix_web::{
     error::ResponseError,
     http::{StatusCode, header::ContentType},
 };
-use thiserror::Error;
 use image::ImageError;
+use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum ConfigError {
@@ -15,7 +15,7 @@ pub enum ConfigError {
     InvalidEnv(String),
 }
 #[derive(Debug, Error)]
-pub enum UploadsError{
+pub enum UploadsError {
     #[error("There has been an error trying to generate the presinged URI : {0}")]
     PresignedURIGenerationError(String),
 
@@ -39,9 +39,18 @@ pub enum UploadsError{
 }
 
 #[derive(Error, Debug)]
+pub enum DerivativesError {
+    #[error(transparent)]
+    GenerationError(#[from] DerivativesGenerationError),
+
+    #[error("There was an error while deleting image: {0}")]
+    DeletionError(String),
+}
+
+#[derive(Error, Debug)]
 pub enum DerivativesGenerationError {
-   #[error("There was a problem downloading the image from the bucket")]
-   ObjectDownloadError,
+    #[error("There was a problem downloading the image from the bucket")]
+    ObjectDownloadError,
 
     #[error("There was an error extracting the bytes from downloaded object")]
     BytesExtractionError,
@@ -68,10 +77,10 @@ pub enum DerivativesGenerationError {
     ErrorRecordingVariants(String),
 
     #[error("Image into_decoder for orientation error")]
-    IntoDecoderError(#[from] ImageError ),
+    IntoDecoderError(#[from] ImageError),
 
     #[error("Exif parsing error")]
-    ExifParsingError(#[from] exif::Error)
+    ExifParsingError(#[from] exif::Error),
 }
 
 #[derive(Error, Debug)]
@@ -87,6 +96,12 @@ pub enum PhotosError {
 
     #[error("There was an error fetching collections: {0}")]
     ErrorFetchingCollections(String),
+
+    #[error("There was an error deleting photo: {0}")]
+    ErrorDeletingPhoto(String),
+
+    #[error("There was an error updating photo status: {0}")]
+    ErrorUpdatingPhoto(String),
 }
 
 #[derive(Debug, Error)]
@@ -107,7 +122,7 @@ pub enum AppError {
     Collection(#[from] CollectionError),
 
     #[error(transparent)]
-    Derivatives(#[from] DerivativesGenerationError),
+    Derivatives(#[from] DerivativesError),
 
     #[error(transparent)]
     Uploads(#[from] UploadsError),
@@ -136,6 +151,11 @@ pub enum AppError {
     #[error("Invalid Mime type detected at extractor: {0}")]
     InvalidContentType(String),
 }
+impl From<DerivativesGenerationError> for AppError {
+    fn from(value: DerivativesGenerationError) -> Self {
+        AppError::Derivatives(DerivativesError::GenerationError(value))
+    }
+}
 
 impl ResponseError for AppError {
     fn error_response(&self) -> HttpResponse {
@@ -153,39 +173,86 @@ impl ResponseError for AppError {
             AppError::JWTCreationFailed => StatusCode::INTERNAL_SERVER_ERROR,
             AppError::InvalidToken => StatusCode::UNAUTHORIZED,
             AppError::InputValidationError(_) => StatusCode::BAD_REQUEST,
-            AppError::InvalidContentType(_)=> StatusCode::BAD_REQUEST,
+            AppError::InvalidContentType(_) => StatusCode::BAD_REQUEST,
 
             AppError::Io(_) => StatusCode::INTERNAL_SERVER_ERROR,
             AppError::Config(_) => StatusCode::INTERNAL_SERVER_ERROR,
 
-
-            AppError::Uploads(UploadsError::PresignedURIGenerationError(_)) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Uploads(UploadsError::PresignedURIGenerationError(_)) => {
+                StatusCode::INTERNAL_SERVER_ERROR
+            }
             AppError::Uploads(UploadsError::InvalidFileSize(_)) => StatusCode::BAD_REQUEST,
-            AppError::Uploads(UploadsError::UploadInitiationError(_)) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Uploads(UploadsError::UploadInitiationError(_)) => {
+                StatusCode::INTERNAL_SERVER_ERROR
+            }
             AppError::Uploads(UploadsError::PhotoNotFound(_)) => StatusCode::NOT_FOUND,
-            AppError::Uploads(UploadsError::PhotoQueryError(_)) => StatusCode::INTERNAL_SERVER_ERROR,
-            AppError::Uploads(UploadsError::HeadObjectError(_)) => StatusCode::INTERNAL_SERVER_ERROR,
-            AppError::Uploads(UploadsError::ErrorUpdatingPhoto(_)) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Uploads(UploadsError::PhotoQueryError(_)) => {
+                StatusCode::INTERNAL_SERVER_ERROR
+            }
+            AppError::Uploads(UploadsError::HeadObjectError(_)) => {
+                StatusCode::INTERNAL_SERVER_ERROR
+            }
+            AppError::Uploads(UploadsError::ErrorUpdatingPhoto(_)) => {
+                StatusCode::INTERNAL_SERVER_ERROR
+            }
 
-            AppError::Derivatives(DerivativesGenerationError::ObjectDownloadError) => StatusCode::INTERNAL_SERVER_ERROR,
-            AppError::Derivatives(DerivativesGenerationError::BytesExtractionError) => StatusCode::INTERNAL_SERVER_ERROR,
-            AppError::Derivatives(DerivativesGenerationError::ImageByteReadingError) => StatusCode::INTERNAL_SERVER_ERROR,
-            AppError::Derivatives(DerivativesGenerationError::ReaderExtractionError) => StatusCode::INTERNAL_SERVER_ERROR,
-            AppError::Derivatives(DerivativesGenerationError::AVIFEncodingError) => StatusCode::INTERNAL_SERVER_ERROR,
-            AppError::Derivatives(DerivativesGenerationError::BlurhashCreationError) => StatusCode::INTERNAL_SERVER_ERROR,
-            AppError::Derivatives(DerivativesGenerationError::ImageProcessingError(_)) => StatusCode::INTERNAL_SERVER_ERROR,
-            AppError::Derivatives(DerivativesGenerationError::ObjectUploadError) => StatusCode::INTERNAL_SERVER_ERROR,
-            AppError::Derivatives(DerivativesGenerationError::ErrorRecordingVariants(_)) => StatusCode::INTERNAL_SERVER_ERROR,
-            AppError::Derivatives(DerivativesGenerationError::IntoDecoderError(_)) => StatusCode::INTERNAL_SERVER_ERROR,
-            AppError::Derivatives(DerivativesGenerationError::ExifParsingError(_)) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Derivatives(DerivativesError::GenerationError(
+                DerivativesGenerationError::ObjectDownloadError,
+            )) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Derivatives(DerivativesError::GenerationError(
+                DerivativesGenerationError::BytesExtractionError,
+            )) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Derivatives(DerivativesError::GenerationError(
+                DerivativesGenerationError::ImageByteReadingError,
+            )) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Derivatives(DerivativesError::GenerationError(
+                DerivativesGenerationError::ReaderExtractionError,
+            )) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Derivatives(DerivativesError::GenerationError(
+                DerivativesGenerationError::AVIFEncodingError,
+            )) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Derivatives(DerivativesError::GenerationError(
+                DerivativesGenerationError::BlurhashCreationError,
+            )) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Derivatives(DerivativesError::GenerationError(
+                DerivativesGenerationError::ImageProcessingError(_),
+            )) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Derivatives(DerivativesError::GenerationError(
+                DerivativesGenerationError::ObjectUploadError,
+            )) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Derivatives(DerivativesError::GenerationError(
+                DerivativesGenerationError::ErrorRecordingVariants(_),
+            )) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Derivatives(DerivativesError::GenerationError(
+                DerivativesGenerationError::IntoDecoderError(_),
+            )) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Derivatives(DerivativesError::GenerationError(
+                DerivativesGenerationError::ExifParsingError(_),
+            )) => StatusCode::INTERNAL_SERVER_ERROR,
 
-            AppError::Photos(PhotosError::ErrorFetchingPhotos(_)) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Derivatives(DerivativesError::DeletionError(_)) => {
+                StatusCode::INTERNAL_SERVER_ERROR
+            }
+
+            AppError::Photos(PhotosError::ErrorFetchingPhotos(_)) => {
+                StatusCode::INTERNAL_SERVER_ERROR
+            }
             AppError::Photos(PhotosError::PhotoNotFound(_)) => StatusCode::NOT_FOUND,
             AppError::Photos(PhotosError::PhotoQueryError(_)) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Photos(PhotosError::ErrorDeletingPhoto(_)) => {
+                StatusCode::INTERNAL_SERVER_ERROR
+            }
+            AppError::Photos(PhotosError::ErrorUpdatingPhoto(_)) => {
+                StatusCode::INTERNAL_SERVER_ERROR
+            }
 
-            AppError::Photos(PhotosError::ErrorFetchingCollections(_)) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Photos(PhotosError::ErrorFetchingCollections(_)) => {
+                StatusCode::INTERNAL_SERVER_ERROR
+            }
             AppError::Collection(CollectionError::CollectionNotFound(_)) => StatusCode::NOT_FOUND,
-            AppError::Collection(CollectionError::CollectionQueryError(_)) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Collection(CollectionError::CollectionQueryError(_)) => {
+                StatusCode::INTERNAL_SERVER_ERROR
+            }
         }
     }
 }

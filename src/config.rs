@@ -8,7 +8,7 @@ use sqlx::postgres::{PgConnectOptions, PgSslMode};
 pub struct Config {
     pub application: ApplicationConfig,
     pub database: DBConfig,
-    pub rustfs_config: RustFSConfig
+    pub rustfs_config: RustFSConfig,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -50,14 +50,13 @@ impl DBConfig {
     }
 }
 
-
 #[derive(Deserialize, Debug, Clone)]
 pub struct RustFSConfig {
     pub region: String,
     pub access_key_id: String,
     pub secret_access_key: String,
     pub endpoint_internal: String, // server → RustFS, http://rustfs:9000 in prod
-    pub endpoint_public: String, // browser → RustFS, https://s3.esemese.xyz in prod
+    pub endpoint_public: String,   // browser → RustFS, https://s3.esemese.xyz in prod
     pub bucket_photos: String,
 }
 
@@ -142,18 +141,24 @@ impl Config {
         };
 
         let rustfs_config = RustFSConfig {
-            region: std::env::var("RUSTFS_REGION").map_err(|_| ConfigError::MissingEnv("RUSTFS_REGION".to_string()))?,
-            access_key_id: std::env::var("RUSTFS_ACCESS_KEY_ID").map_err(|_| ConfigError::MissingEnv("RUSTFS_ACCESS_KEY_ID".to_string()))?,
-            secret_access_key: std::env::var("RUSTFS_SECRET_ACCESS_KEY").map_err(|_| ConfigError::MissingEnv("RUSTFS_SECRET_ACCESS_KEY".to_string()))?,
-            endpoint_public: std::env::var("RUSTFS_ENDPOINT_PUBLIC").map_err(|_| ConfigError::MissingEnv("RUSTFS_ENDPOINT_PUBLIC".to_string()))?,
-            endpoint_internal: std::env::var("RUSTFS_ENDPOINT_INTERNAL").map_err(|_| ConfigError::MissingEnv("RUSTFS_ENDPOINT_INTERNAL".to_string()))?,
-            bucket_photos: std::env::var("RUSTFS_BUCKET_PHOTOS").map_err(|_| ConfigError::MissingEnv("RUSTFS_BUCKET_PHOTOS".to_string()))?,
+            region: std::env::var("RUSTFS_REGION")
+                .map_err(|_| ConfigError::MissingEnv("RUSTFS_REGION".to_string()))?,
+            access_key_id: std::env::var("RUSTFS_ACCESS_KEY_ID")
+                .map_err(|_| ConfigError::MissingEnv("RUSTFS_ACCESS_KEY_ID".to_string()))?,
+            secret_access_key: std::env::var("RUSTFS_SECRET_ACCESS_KEY")
+                .map_err(|_| ConfigError::MissingEnv("RUSTFS_SECRET_ACCESS_KEY".to_string()))?,
+            endpoint_public: std::env::var("RUSTFS_ENDPOINT_PUBLIC")
+                .map_err(|_| ConfigError::MissingEnv("RUSTFS_ENDPOINT_PUBLIC".to_string()))?,
+            endpoint_internal: std::env::var("RUSTFS_ENDPOINT_INTERNAL")
+                .map_err(|_| ConfigError::MissingEnv("RUSTFS_ENDPOINT_INTERNAL".to_string()))?,
+            bucket_photos: std::env::var("RUSTFS_BUCKET_PHOTOS")
+                .map_err(|_| ConfigError::MissingEnv("RUSTFS_BUCKET_PHOTOS".to_string()))?,
         };
 
         Ok(Self {
             application,
             database,
-           rustfs_config
+            rustfs_config,
         })
     }
     fn development_config() -> Result<Self, ConfigError> {
@@ -178,12 +183,18 @@ impl Config {
         };
 
         let dev_rustfs_config = RustFSConfig {
-            region: std::env::var("RUSTFS_REGION").map_err(|_| ConfigError::MissingEnv("RUSTFS_REGION".to_string()))?,
-            access_key_id: std::env::var("RUSTFS_ACCESS_KEY_ID").map_err(|_| ConfigError::MissingEnv("RUSTFS_ACCESS_KEY_ID".to_string()))?,
-            secret_access_key: std::env::var("RUSTFS_SECRET_ACCESS_KEY").map_err(|_| ConfigError::MissingEnv("RUSTFS_SECRET_ACCESS_KEY".to_string()))?,
-            endpoint_public: std::env::var("RUSTFS_ENDPOINT_PUBLIC").map_err(|_| ConfigError::MissingEnv("RUSTFS_ENDPOINT_PUBLIC".to_string()))?,
-            endpoint_internal: std::env::var("RUSTFS_ENDPOINT_INTERNAL").map_err(|_| ConfigError::MissingEnv("RUSTFS_ENDPOINT_INTERNAL".to_string()))?,
-            bucket_photos: std::env::var("RUSTFS_BUCKET_PHOTOS").map_err(|_| ConfigError::MissingEnv("RUSTFS_BUCKET_PHOTOS".to_string()))?,
+            region: std::env::var("RUSTFS_REGION")
+                .map_err(|_| ConfigError::MissingEnv("RUSTFS_REGION".to_string()))?,
+            access_key_id: std::env::var("RUSTFS_ACCESS_KEY_ID")
+                .map_err(|_| ConfigError::MissingEnv("RUSTFS_ACCESS_KEY_ID".to_string()))?,
+            secret_access_key: std::env::var("RUSTFS_SECRET_ACCESS_KEY")
+                .map_err(|_| ConfigError::MissingEnv("RUSTFS_SECRET_ACCESS_KEY".to_string()))?,
+            endpoint_public: std::env::var("RUSTFS_ENDPOINT_PUBLIC")
+                .map_err(|_| ConfigError::MissingEnv("RUSTFS_ENDPOINT_PUBLIC".to_string()))?,
+            endpoint_internal: std::env::var("RUSTFS_ENDPOINT_INTERNAL")
+                .map_err(|_| ConfigError::MissingEnv("RUSTFS_ENDPOINT_INTERNAL".to_string()))?,
+            bucket_photos: std::env::var("RUSTFS_BUCKET_PHOTOS")
+                .map_err(|_| ConfigError::MissingEnv("RUSTFS_BUCKET_PHOTOS".to_string()))?,
         };
 
         Ok(Self {
