@@ -1,11 +1,11 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT * FROM collections WHERE slug = $1",
+  "query": "SELECT c.id AS \"id!\",\n       \t\t\t\t\t\t\t\t\t\t\t\t \t\t\tc.name        AS \"name!\",\n         \t\t\t\t\t\t\t\t\t\t\t\t\t\tc.slug        AS \"slug!\",\n         \t\t\t\t\t\t\t\t\t\t\t\t\t\tc.description,            -- nullable because struct is Option\n         \t\t\t\t\t\t\t\t\t\t\t\t\t\tc.cover_photo_id,         -- nullable because struct is Option\n         \t\t\t\t\t\t\t\t\t\t\t\t\t\tc.created_at  AS \"created_at!\",\n         \t\t\t\t\t\t\t\t\t\t\t\t\t\tc.updated_at  AS \"updated_at!\",\n         \t\t\t\t\t\t\t\t\t\t\t\t\t\tph.s3_key     AS \"cover_s3_key?\",\n         \t\t\t\t\t\t\t\t\t\t\t\t\t\tph.blurhash   AS \"cover_blurhash?\"\n\t\t\t\t\t\t\t\t\t\t\t\t\t\tFROM collections c\n\t\t\t\t\t\t\t\t\t\t \t\t\t\tLEFT JOIN photos ph ON ph.id = c.cover_photo_id\n\t\t\t\t\t\t\t\t\t\t\t\t\t\tWHERE slug = $1",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "id",
+        "name": "id!",
         "type_info": "Uuid",
         "origin": {
           "Table": {
@@ -16,7 +16,7 @@
       },
       {
         "ordinal": 1,
-        "name": "name",
+        "name": "name!",
         "type_info": "Varchar",
         "origin": {
           "Table": {
@@ -27,7 +27,7 @@
       },
       {
         "ordinal": 2,
-        "name": "slug",
+        "name": "slug!",
         "type_info": "Varchar",
         "origin": {
           "Table": {
@@ -60,7 +60,7 @@
       },
       {
         "ordinal": 5,
-        "name": "created_at",
+        "name": "created_at!",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
@@ -71,12 +71,34 @@
       },
       {
         "ordinal": 6,
-        "name": "updated_at",
+        "name": "updated_at!",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
             "table": "collections",
             "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "cover_s3_key?",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "photos",
+            "name": "s3_key"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "cover_blurhash?",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "photos",
+            "name": "blurhash"
           }
         }
       }
@@ -87,14 +109,16 @@
       ]
     },
     "nullable": [
-      false,
-      false,
-      false,
       true,
       true,
+      true,
+      true,
+      true,
+      true,
+      true,
       false,
-      false
+      true
     ]
   },
-  "hash": "5b34381da3925f27540d92690303fc9ed79b66e64fff66e95fe4e4f7faf2ef65"
+  "hash": "a7d238c9d436eacaf4cdf16956b92bb90a1c4be61acbdbfca8a35a4c6ab4c1a6"
 }

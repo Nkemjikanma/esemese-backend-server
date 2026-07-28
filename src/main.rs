@@ -7,8 +7,8 @@ use esemese_backend_server::{
 };
 
 use aws_config::{BehaviorVersion, Region};
-use aws_sdk_s3::config::Credentials;
 use aws_sdk_s3::Client;
+use aws_sdk_s3::config::Credentials;
 use esemese_backend_server::services::derivatives::process_derivative_for_photo;
 use std::net::TcpListener;
 use std::sync::Arc;
@@ -126,7 +126,10 @@ pub async fn run_derivatives_worker(app_state: Arc<AppState>) {
                 Ok(jobs) => jobs,
                 Err(e) => {
                     // database error so stop, wait for next trigger
-                    tracing::warn!("Failed finding pending jobs, the worker will try again soon: {:?}", e);
+                    tracing::warn!(
+                        "Failed finding pending jobs, the worker will try again soon: {:?}",
+                        e
+                    );
                     break;
                 }
             };
@@ -163,9 +166,8 @@ pub async fn run_photos_cleanup(app_state: Arc<AppState>) {
         interval.tick().await;
 
         // mark photos with more than 3 attempts as failed
-        if let Err(cleanup) = sqlx::query!(r#"UPDATE photos SET status = 'failed' WHERE status = 'processing'
-                                              AND attempts >= 3
-                                              AND (claimed_at IS NULL OR claimed_at < now() - interval '1 hour')"#)
+        if let Err(cleanup) = sqlx::query!(r#"UPDATE photos SET status = 'failed', updated_at = now() WHERE status =
+        'processing' AND attempts >= 3 AND (claimed_at IS NULL OR claimed_at < now() - interval '1 hour')"#)
            .execute(&app_state.connection).await {
 
            tracing::warn!("Photos with more than 3 attempts haven't been moved to failed: {:?}", cleanup);
@@ -179,6 +181,16 @@ pub async fn run_photos_cleanup(app_state: Arc<AppState>) {
         .await
         {
             tracing::warn!("Deleting orphaned Upload URL failed: {:?}", deletion);
+        }
+
+        if let Err(deleting) = sqlx::query!(
+            r#"DELETE FROM photos WHERE status = 'deleting' AND updated_at < now() -
+        interval '1 hour'"#
+        )
+        .execute(&app_state.connection)
+        .await
+        {
+            tracing::warn!("Cleaning up orphaned photos record from incomplete deletion");
         }
     }
 }

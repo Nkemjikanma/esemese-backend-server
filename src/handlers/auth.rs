@@ -4,9 +4,9 @@ use crate::{
     types::{app::AppState, auth::LoginForm},
 };
 
+use actix_web::http::StatusCode;
 use actix_web::web;
 use std::sync::Arc;
-use actix_web::http::StatusCode;
 
 pub async fn login(
     login_form: web::Json<LoginForm>,
