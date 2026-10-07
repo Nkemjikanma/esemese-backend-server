@@ -1,6 +1,7 @@
 use crate::common::api::{APIResponse, AppResponse};
 use crate::services::photos::PhotosService;
 use crate::types::common::{PaginatedResponse, Pagination};
+use crate::types::photos::UpdatePhotoMetadata;
 use crate::types::{
     app::AppState,
     photos::{Photo, Photos, PhotosQueryInfo},
@@ -42,6 +43,24 @@ pub async fn delete_photo(
 
     Ok((
         APIResponse::success("Photo has successfully been deleted".to_string()),
+        StatusCode::OK,
+    ))
+}
+
+pub async fn update_photo_metadata(
+    path: web::Path<Uuid>,
+    body: web::Json<UpdatePhotoMetadata>,
+    app_state: web::Data<Arc<AppState>>,
+) -> AppResponse<String> {
+    PhotosService::update_photo_metadata(
+        path.into_inner(),
+        body.into_inner(),
+        &app_state.connection,
+    )
+    .await?;
+
+    Ok((
+        APIResponse::success("Photo metadata has been updated".to_string()),
         StatusCode::OK,
     ))
 }

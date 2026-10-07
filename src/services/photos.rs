@@ -1,10 +1,12 @@
-use crate::common::errors::{AppError, DerivativesError, PhotosError, UploadsError};
+use crate::common::errors::{AppError, DerivativesError, PhotosError};
 use crate::types::common::{PaginatedResponse, Pagination};
+use crate::types::photos::UpdatePhotoMetadata;
 use crate::types::{
     app::AppState,
     photos::{Photo, PhotosQueryInfo},
     variants::Variant,
 };
+use sqlx::PgPool;
 use uuid::Uuid;
 
 pub struct PhotosService;
@@ -112,12 +114,57 @@ impl PhotosService {
             tracing::error!("Failed to fetch photo with Id, {}: {:?}", photo_id, e);
 
             match e {
-                sqlx::Error::RowNotFound => PhotosError::PhotoNotFound(e.to_string()),
+                sqlx::Error::RowNotFound => PhotosError::PhotoNotFound(photo_id.to_string()),
                 _ => PhotosError::PhotoQueryError(e.to_string()),
             }
         })?;
 
         Ok(photo)
+    }
+
+    pub async fn update_photo_metadata(
+        photo_item_id: Uuid,
+        metadata: UpdatePhotoMetadata,
+        connection: &sqlx::PgPool,
+    ) -> Result<(), AppError> {
+        // update the records with new fields using UPDATE and COALESCE
+        let photo_update_query = sqlx::query!(
+            r#"UPDATE photo_metadata 
+            SET
+                aperture = COALESCE($1, aperture),
+                camera = COALESCE($2, camera),
+                focal_length = COALESCE($3, focal_length),
+                iso = COALESCE($4, iso), 
+                shutter_speed = COALESCE($5, shutter_speed),
+                lens = COALESCE($6, lens), 
+                location = COALESCE($7, location), 
+                taken_at = COALESCE($8, taken_at)
+            WHERE photo_id = $9"#,
+            metadata.aperture,
+            metadata.camera,
+            metadata.focal_length,
+            metadata.iso,
+            metadata.shutter_speed,
+            metadata.lens,
+            metadata.location,
+            metadata.taken_at,
+            photo_item_id
+        )
+        .execute(connection)
+        .await
+        .map_err(|e| {
+            tracing::error!(error = ?e, "Failed to update photo metadata");
+
+            PhotosError::ErrorUpdatingPhotoMetadata
+        })?;
+
+        if photo_update_query.rows_affected() == 0 {
+            return Err(AppError::Photos(PhotosError::PhotoNotFound(
+                photo_item_id.to_string(),
+            )));
+        }
+
+        Ok(())
     }
 
     pub async fn delete_photo(photo_id: Uuid, app_state: &AppState) -> Result<(), AppError> {

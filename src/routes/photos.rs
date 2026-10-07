@@ -15,6 +15,7 @@ pub fn configure_photos(cfg: &mut web::ServiceConfig) {
     .service(
         web::scope("/photos")
             .wrap(auth_middleware)
-            .route("/{id}", web::delete().to(photos::delete_photo)),
+            .route("/{id}", web::delete().to(photos::delete_photo))
+            .route("/{id}", web::put().to(photos::update_photo_metadata)),
     );
 }

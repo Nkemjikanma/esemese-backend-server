@@ -152,7 +152,7 @@ A portfolio is the inverse of Dropbox: the gallery is *meant* to be seen by ever
 - [x] `POST /uploads/initiate` — start upload (from 1.4)
 - [x] `POST /uploads/confirm` — confirm upload + save metadata (from 1.4)
 - [ ] `PUT /photos/:id` — update photo metadata
-- [ ] `DELETE /photos/:id` — delete photo (also delete from S3)
+- [x] `DELETE /photos/:id` — delete photo (also delete from S3)
 - [ ] `POST /collections` — create collection
 - [ ] `PUT /collections/:id` — update collection
 - [ ] `DELETE /collections/:id` — delete collection
