@@ -88,7 +88,7 @@ pub enum PhotosError {
     #[error("There was an error fetching photo: {0}")]
     ErrorFetchingPhotos(String),
 
-    #[error("There wan an error getting photo: {0}")]
+    #[error("Photo with id {0} not found")]
     PhotoNotFound(String),
 
     #[error("Something went wrong while retrieving photo: {0}")]
@@ -102,6 +102,12 @@ pub enum PhotosError {
 
     #[error("There was an error updating photo status: {0}")]
     ErrorUpdatingPhoto(String),
+
+    #[error("There was an error fetching the photo metadata")]
+    ErrorRetrievingMetadata,
+
+    #[error("There was an error updating the photo metadata")]
+    ErrorUpdatingPhotoMetadata,
 }
 
 #[derive(Debug, Error)]
@@ -245,8 +251,12 @@ impl ResponseError for AppError {
             AppError::Photos(PhotosError::ErrorUpdatingPhoto(_)) => {
                 StatusCode::INTERNAL_SERVER_ERROR
             }
-
             AppError::Photos(PhotosError::ErrorFetchingCollections(_)) => {
+                StatusCode::INTERNAL_SERVER_ERROR
+            }
+            AppError::Photos(PhotosError::ErrorRetrievingMetadata) => StatusCode::NOT_FOUND,
+
+            AppError::Photos(PhotosError::ErrorUpdatingPhotoMetadata) => {
                 StatusCode::INTERNAL_SERVER_ERROR
             }
             AppError::Collection(CollectionError::CollectionNotFound(_)) => StatusCode::NOT_FOUND,
